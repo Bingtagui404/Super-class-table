@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect, useLayoutEffect } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import DayHeader from './DayHeader';
 import TimeColumn, { TIME_COL_WIDTH, CELL_HEIGHT } from './TimeColumn';
@@ -93,40 +93,31 @@ export default function ScheduleGrid({
     setTimeout(() => { isRecentering.current = false; }, 100);
   }, [pageWidth]);
 
-  // 周切换后重置到中间页（useLayoutEffect 在绘制前同步执行，防止闪烁）
-  useLayoutEffect(() => {
-    isRecentering.current = true;
-    if (hScrollRef.current) {
-      hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
-    }
-    setTimeout(() => { isRecentering.current = false; }, 100);
-  }, [grid, pageWidth]);
-
   const handleScrollEnd = useCallback((e) => {
-    // 重置期间忽略滚动事件，防止连跳
     if (isRecentering.current) return;
 
     const offsetX = e.nativeEvent.contentOffset.x;
     const page = Math.round(offsetX / pageWidth);
 
-    if (page === 0) {
+    if (page === 0 || page === 2) {
       isRecentering.current = true;
-      const ok = onSwipeRight && onSwipeRight();
-      if (!ok) {
-        if (hScrollRef.current) {
-          hScrollRef.current.scrollTo({ x: pageWidth, animated: true });
-        }
-        setTimeout(() => { isRecentering.current = false; }, 300);
+      // 关键：先回到中间页，再更新数据，避免闪烁
+      if (hScrollRef.current) {
+        hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
       }
-    } else if (page === 2) {
-      isRecentering.current = true;
-      const ok = onSwipeLeft && onSwipeLeft();
-      if (!ok) {
-        if (hScrollRef.current) {
-          hScrollRef.current.scrollTo({ x: pageWidth, animated: true });
+      // 延迟一帧再切换数据，确保 scrollTo 已生效
+      requestAnimationFrame(() => {
+        let ok = false;
+        if (page === 0) {
+          ok = onSwipeRight && onSwipeRight();
+        } else {
+          ok = onSwipeLeft && onSwipeLeft();
         }
-        setTimeout(() => { isRecentering.current = false; }, 300);
-      }
+        if (!ok) {
+          // 边界周，已经在中间页了，不需要额外操作
+        }
+        setTimeout(() => { isRecentering.current = false; }, 150);
+      });
     }
   }, [pageWidth, onSwipeLeft, onSwipeRight]);
 
