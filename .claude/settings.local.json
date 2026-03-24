@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-expo-app@latest . --template blank-typescript)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(ls \"D:/Code/projects/Super-class-table/node_modules/.bin/expo\"*)"
+    ]
+  }
+}
