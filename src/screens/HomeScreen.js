@@ -1,8 +1,9 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
+  Animated as RNAnimated,
   StyleSheet,
   Modal,
   Alert,
@@ -59,8 +60,17 @@ export default function HomeScreen({ navigation }) {
     return true;
   };
 
+  const modalScale = useRef(new RNAnimated.Value(0)).current;
+  const modalOpacity = useRef(new RNAnimated.Value(0)).current;
+
   const handlePressCourse = (course) => {
     setDetailCourse(course);
+    modalScale.setValue(0.7);
+    modalOpacity.setValue(0);
+    RNAnimated.parallel([
+      RNAnimated.spring(modalScale, { toValue: 1, friction: 6, tension: 100, useNativeDriver: true }),
+      RNAnimated.timing(modalOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
+    ]).start();
   };
 
   const handlePressEmpty = (day, startPeriod, endPeriod) => {
@@ -174,13 +184,13 @@ export default function HomeScreen({ navigation }) {
       </TouchableOpacity>
 
       {/* Course Detail Modal */}
-      <Modal visible={!!detailCourse} transparent animationType="fade">
+      <Modal visible={!!detailCourse} transparent animationType="none">
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
           onPress={() => setDetailCourse(null)}
         >
-          <View style={styles.modalContent} onStartShouldSetResponder={() => true}>
+          <RNAnimated.View style={[styles.modalContent, { transform: [{ scale: modalScale }], opacity: modalOpacity }]} onStartShouldSetResponder={() => true}>
             {detailCourse && (
               <>
                 <Text style={styles.modalTitle}>{detailCourse.name}</Text>
@@ -209,7 +219,7 @@ export default function HomeScreen({ navigation }) {
                 </View>
               </>
             )}
-          </View>
+          </RNAnimated.View>
         </TouchableOpacity>
       </Modal>
 

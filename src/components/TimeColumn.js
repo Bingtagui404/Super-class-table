@@ -4,7 +4,7 @@ import { PERIODS } from '../constants/config';
 import { THEME } from '../constants/colors';
 
 export const TIME_COL_WIDTH = 44;
-export const CELL_HEIGHT = 75;
+export const CELL_HEIGHT = 82;
 
 export default function TimeColumn() {
   return (
