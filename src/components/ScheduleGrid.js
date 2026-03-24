@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect, useLayoutEffect } from 'react';
 import { View, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
 import DayHeader from './DayHeader';
 import TimeColumn, { TIME_COL_WIDTH, CELL_HEIGHT } from './TimeColumn';
@@ -93,15 +93,13 @@ export default function ScheduleGrid({
     setTimeout(() => { isRecentering.current = false; }, 100);
   }, [pageWidth]);
 
-  // 周切换后重置到中间页
-  useEffect(() => {
+  // 周切换后重置到中间页（useLayoutEffect 在绘制前同步执行，防止闪烁）
+  useLayoutEffect(() => {
     isRecentering.current = true;
-    setTimeout(() => {
-      if (hScrollRef.current) {
-        hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
-      }
-      setTimeout(() => { isRecentering.current = false; }, 100);
-    }, 0);
+    if (hScrollRef.current) {
+      hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
+    }
+    setTimeout(() => { isRecentering.current = false; }, 100);
   }, [grid, pageWidth]);
 
   const handleScrollEnd = useCallback((e) => {
