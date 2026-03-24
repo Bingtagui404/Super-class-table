@@ -36,7 +36,7 @@
 
 ### 方式一：直接安装 APK
 
-从 [Releases](https://github.com/Bingtagui404/Super-class-table/releases) 下载最新 APK，传到安卓手机安装即可。
+从 [Releases](https://github.com/Bingtagui404/Super-class-table/releases/latest) 下载最新 APK（当前 v2.4），传到安卓手机安装即可。
 
 ### 方式二：本地开发
 
@@ -101,7 +101,7 @@ src/
 
 ## 已知问题
 
-- **切换账号功能暂不可用** — 教务系统的登录 session 由服务端控制，WebView 刷新后仍保持上一个账号的登录状态，目前无法在 App 内切换到其他账号。临时解决方案：卸载重装 App。
+- **切换账号** — v2.4 已加入 cookie 清除，点击"切换账号"可重新登录。如仍无法切换，尝试卸载重装。
 
 ## 反馈
 
