@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { View, StyleSheet } from 'react-native';
 import WheelPicker from './WheelPicker';
 
-const YEARS = Array.from({ length: 11 }, (_, i) => 2020 + i); // 2020-2030
+const YEARS = Array.from({ length: 16 }, (_, i) => 2020 + i); // 2020-2035
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 function getDaysInMonth(year, month) {
@@ -10,11 +10,20 @@ function getDaysInMonth(year, month) {
 }
 
 export default function DateWheelPicker({ value, onDateChange }) {
+  // 兼容 YYYY-MM-DD 和 YYYY/M/D 等格式
   const parseDate = useCallback((dateStr) => {
     if (!dateStr) return { year: 2025, month: 9, day: 1 };
-    const match = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+    const match = dateStr.trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
     if (!match) return { year: 2025, month: 9, day: 1 };
-    return { year: parseInt(match[1]), month: parseInt(match[2]), day: parseInt(match[3]) };
+    const y = parseInt(match[1]);
+    const m = parseInt(match[2]);
+    const d = parseInt(match[3]);
+    // 如果年份超出滚轮范围，clamp 到范围内
+    const clampedYear = Math.max(YEARS[0], Math.min(YEARS[YEARS.length - 1], y));
+    const clampedMonth = Math.max(1, Math.min(12, m));
+    const maxD = getDaysInMonth(clampedYear, clampedMonth);
+    const clampedDay = Math.max(1, Math.min(maxD, d));
+    return { year: clampedYear, month: clampedMonth, day: clampedDay };
   }, []);
 
   const parsed = parseDate(value);

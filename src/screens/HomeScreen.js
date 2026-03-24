@@ -10,6 +10,7 @@ import {
   TextInput,
   Platform,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from '@react-navigation/native';
 import ScheduleGrid from '../components/ScheduleGrid';
 import WeekSelector from '../components/WeekSelector';
@@ -286,6 +287,27 @@ export default function HomeScreen({ navigation }) {
             >
               <Text style={styles.clearBtnText}>清除所有课程</Text>
             </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.feedbackBtn}
+              onPress={() => {
+                Alert.alert(
+                  '反馈问题',
+                  '开发者：白小纯\n邮箱：527196771@qq.com',
+                  [
+                    {
+                      text: '复制邮箱',
+                      onPress: () => {
+                        Clipboard.setStringAsync('527196771@qq.com');
+                        Alert.alert('已复制', '邮箱已复制到剪贴板');
+                      },
+                    },
+                    { text: '关闭' },
+                  ]
+                );
+              }}
+            >
+              <Text style={styles.feedbackBtnText}>反馈问题</Text>
+            </TouchableOpacity>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -389,4 +411,13 @@ const styles = StyleSheet.create({
     borderColor: THEME.danger,
   },
   clearBtnText: { color: THEME.danger, fontSize: 14 },
+  feedbackBtn: {
+    marginTop: 12,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: THEME.primary,
+  },
+  feedbackBtnText: { color: THEME.primary, fontSize: 14 },
 });

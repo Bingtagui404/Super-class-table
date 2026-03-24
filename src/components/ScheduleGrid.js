@@ -82,7 +82,7 @@ export default function ScheduleGrid({
 }) {
   const hScrollRef = useRef(null);
   const pageWidth = SCREEN_WIDTH - TIME_COL_WIDTH;
-  const isAdjusting = useRef(false);
+  const pendingRecenter = useRef(false);
 
   // 初始滚到中间页（当前周）
   useEffect(() => {
@@ -91,10 +91,16 @@ export default function ScheduleGrid({
     }
   }, [pageWidth]);
 
-  // 当 grid 数据变化（周切换后），重置到中间页
+  // 当 grid 数据变化（周切换后），无条件重置到中间页
   useEffect(() => {
-    if (hScrollRef.current && !isAdjusting.current) {
-      hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
+    if (pendingRecenter.current && hScrollRef.current) {
+      pendingRecenter.current = false;
+      // 用 setTimeout(0) 确保在 React 渲染完成后执行
+      setTimeout(() => {
+        if (hScrollRef.current) {
+          hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
+        }
+      }, 0);
     }
   }, [grid, pageWidth]);
 
@@ -104,23 +110,25 @@ export default function ScheduleGrid({
 
     if (page === 0) {
       // 滑到了左页（上一周）
-      isAdjusting.current = true;
+      pendingRecenter.current = true;
       const ok = onSwipeRight && onSwipeRight();
-      // 数据切换后会重新渲染，useEffect 会重置到中间
-      setTimeout(() => { isAdjusting.current = false; }, 50);
-      if (!ok && hScrollRef.current) {
-        hScrollRef.current.scrollTo({ x: pageWidth, animated: true });
+      if (!ok) {
+        pendingRecenter.current = false;
+        if (hScrollRef.current) {
+          hScrollRef.current.scrollTo({ x: pageWidth, animated: true });
+        }
       }
     } else if (page === 2) {
       // 滑到了右页（下一周）
-      isAdjusting.current = true;
+      pendingRecenter.current = true;
       const ok = onSwipeLeft && onSwipeLeft();
-      setTimeout(() => { isAdjusting.current = false; }, 50);
-      if (!ok && hScrollRef.current) {
-        hScrollRef.current.scrollTo({ x: pageWidth, animated: true });
+      if (!ok) {
+        pendingRecenter.current = false;
+        if (hScrollRef.current) {
+          hScrollRef.current.scrollTo({ x: pageWidth, animated: true });
+        }
       }
     }
-    // page === 1 = 中间页，不需要处理
   }, [pageWidth, onSwipeLeft, onSwipeRight]);
 
   return (

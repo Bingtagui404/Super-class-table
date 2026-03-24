@@ -9,20 +9,27 @@ const PADDING = ITEM_HEIGHT * Math.floor(VISIBLE_ITEMS / 2);
 
 export default function WheelPicker({ items, selectedIndex, onIndexChange, label }) {
   const scrollRef = useRef(null);
-  const isUserScroll = useRef(true);
+  const lastUserIdx = useRef(null);
 
+  // 当 selectedIndex 变化时，无条件滚动到对应位置
   useEffect(() => {
-    if (scrollRef.current && !isUserScroll.current) {
-      scrollRef.current.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
+    // 跳过用户刚刚手动滚动触发的那次 prop 更新
+    if (lastUserIdx.current === selectedIndex) {
+      lastUserIdx.current = null;
+      return;
     }
-    isUserScroll.current = true;
+    const timer = setTimeout(() => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
+      }
+    }, 20);
+    return () => clearTimeout(timer);
   }, [selectedIndex]);
 
-  // Initial scroll position
+  // 初始定位
   useEffect(() => {
     const timer = setTimeout(() => {
       if (scrollRef.current) {
-        isUserScroll.current = false;
         scrollRef.current.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
       }
     }, 50);
@@ -34,7 +41,7 @@ export default function WheelPicker({ items, selectedIndex, onIndexChange, label
     const idx = Math.round(y / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(items.length - 1, idx));
     if (clamped !== selectedIndex) {
-      isUserScroll.current = true;
+      lastUserIdx.current = clamped;
       onIndexChange(clamped);
     }
   };
@@ -43,7 +50,6 @@ export default function WheelPicker({ items, selectedIndex, onIndexChange, label
     <View style={styles.wrapper}>
       {label ? <Text style={styles.label}>{label}</Text> : null}
       <View style={styles.container}>
-        {/* Selection indicator */}
         <View style={styles.indicator} pointerEvents="none" />
         <ScrollView
           ref={scrollRef}
