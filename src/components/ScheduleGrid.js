@@ -82,51 +82,52 @@ export default function ScheduleGrid({
 }) {
   const hScrollRef = useRef(null);
   const pageWidth = SCREEN_WIDTH - TIME_COL_WIDTH;
-  const pendingRecenter = useRef(false);
+  const isRecentering = useRef(false);
 
-  // 初始滚到中间页（当前周）
+  // 初始滚到中间页
   useEffect(() => {
+    isRecentering.current = true;
     if (hScrollRef.current) {
       hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
     }
+    setTimeout(() => { isRecentering.current = false; }, 100);
   }, [pageWidth]);
 
-  // 当 grid 数据变化（周切换后），无条件重置到中间页
+  // 周切换后重置到中间页
   useEffect(() => {
-    if (pendingRecenter.current && hScrollRef.current) {
-      pendingRecenter.current = false;
-      // 用 setTimeout(0) 确保在 React 渲染完成后执行
-      setTimeout(() => {
-        if (hScrollRef.current) {
-          hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
-        }
-      }, 0);
-    }
+    isRecentering.current = true;
+    setTimeout(() => {
+      if (hScrollRef.current) {
+        hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
+      }
+      setTimeout(() => { isRecentering.current = false; }, 100);
+    }, 0);
   }, [grid, pageWidth]);
 
   const handleScrollEnd = useCallback((e) => {
+    // 重置期间忽略滚动事件，防止连跳
+    if (isRecentering.current) return;
+
     const offsetX = e.nativeEvent.contentOffset.x;
     const page = Math.round(offsetX / pageWidth);
 
     if (page === 0) {
-      // 滑到了左页（上一周）
-      pendingRecenter.current = true;
+      isRecentering.current = true;
       const ok = onSwipeRight && onSwipeRight();
       if (!ok) {
-        pendingRecenter.current = false;
         if (hScrollRef.current) {
           hScrollRef.current.scrollTo({ x: pageWidth, animated: true });
         }
+        setTimeout(() => { isRecentering.current = false; }, 300);
       }
     } else if (page === 2) {
-      // 滑到了右页（下一周）
-      pendingRecenter.current = true;
+      isRecentering.current = true;
       const ok = onSwipeLeft && onSwipeLeft();
       if (!ok) {
-        pendingRecenter.current = false;
         if (hScrollRef.current) {
           hScrollRef.current.scrollTo({ x: pageWidth, animated: true });
         }
+        setTimeout(() => { isRecentering.current = false; }, 300);
       }
     }
   }, [pageWidth, onSwipeLeft, onSwipeRight]);
