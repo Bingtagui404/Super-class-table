@@ -60,17 +60,31 @@ export default function HomeScreen({ navigation }) {
     return true;
   };
 
-  const modalScale = useRef(new RNAnimated.Value(0)).current;
+  const modalScale = useRef(new RNAnimated.Value(0.7)).current;
   const modalOpacity = useRef(new RNAnimated.Value(0)).current;
 
   const handlePressCourse = (course) => {
-    setDetailCourse(course);
     modalScale.setValue(0.7);
     modalOpacity.setValue(0);
+    setDetailCourse(course);
+  };
+
+  // 在 Modal 的 onShow 回调中启动入场动画，确保内容已渲染
+  const handleModalShow = () => {
     RNAnimated.parallel([
       RNAnimated.spring(modalScale, { toValue: 1, friction: 6, tension: 100, useNativeDriver: true }),
       RNAnimated.timing(modalOpacity, { toValue: 1, duration: 150, useNativeDriver: true }),
     ]).start();
+  };
+
+  // 关闭时先播退场动画，再真正隐藏
+  const handleCloseModal = () => {
+    RNAnimated.parallel([
+      RNAnimated.timing(modalScale, { toValue: 0.7, duration: 150, useNativeDriver: true }),
+      RNAnimated.timing(modalOpacity, { toValue: 0, duration: 150, useNativeDriver: true }),
+    ]).start(() => {
+      setDetailCourse(null);
+    });
   };
 
   const handlePressEmpty = (day, startPeriod, endPeriod) => {
@@ -184,11 +198,11 @@ export default function HomeScreen({ navigation }) {
       </TouchableOpacity>
 
       {/* Course Detail Modal */}
-      <Modal visible={!!detailCourse} transparent animationType="none">
+      <Modal visible={!!detailCourse} transparent animationType="none" onShow={handleModalShow}>
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setDetailCourse(null)}
+          onPress={handleCloseModal}
         >
           <RNAnimated.View style={[styles.modalContent, { transform: [{ scale: modalScale }], opacity: modalOpacity }]} onStartShouldSetResponder={() => true}>
             {detailCourse && (
