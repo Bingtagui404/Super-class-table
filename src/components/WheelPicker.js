@@ -1,49 +1,75 @@
-import React, { useRef, useEffect } from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import React, { useRef, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, StyleSheet, Platform } from 'react-native';
 import { THEME } from '../constants/colors';
 
-const ITEM_HEIGHT = 40;
-const VISIBLE_ITEMS = 3;
+const ITEM_HEIGHT = 44;
+const VISIBLE_ITEMS = 5;
 const CONTAINER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
 const PADDING = ITEM_HEIGHT * Math.floor(VISIBLE_ITEMS / 2);
 
 export default function WheelPicker({ items, selectedIndex, onIndexChange, label }) {
   const scrollRef = useRef(null);
-  const lastUserIdx = useRef(null);
+  const isUserScrolling = useRef(false);
+  const skipNextPropScroll = useRef(false);
 
-  // 当 selectedIndex 变化时，无条件滚动到对应位置
+  // 滚动到指定索引
+  const scrollToIndex = useCallback((idx, animated = false) => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTo({ y: idx * ITEM_HEIGHT, animated });
+    }
+  }, []);
+
+  // prop 变化时同步滚轮位置
   useEffect(() => {
-    // 跳过用户刚刚手动滚动触发的那次 prop 更新
-    if (lastUserIdx.current === selectedIndex) {
-      lastUserIdx.current = null;
+    if (skipNextPropScroll.current) {
+      skipNextPropScroll.current = false;
       return;
     }
+    // 延迟一点确保 ScrollView 已经 layout
     const timer = setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
+      if (!isUserScrolling.current) {
+        scrollToIndex(selectedIndex, false);
       }
-    }, 20);
+    }, 30);
     return () => clearTimeout(timer);
-  }, [selectedIndex]);
+  }, [selectedIndex, scrollToIndex]);
 
   // 初始定位
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (scrollRef.current) {
-        scrollRef.current.scrollTo({ y: selectedIndex * ITEM_HEIGHT, animated: false });
-      }
-    }, 50);
+    const timer = setTimeout(() => scrollToIndex(selectedIndex, false), 80);
     return () => clearTimeout(timer);
   }, []);
 
-  const handleMomentumEnd = (e) => {
-    const y = e.nativeEvent.contentOffset.y;
+  const snapToNearest = useCallback((y) => {
     const idx = Math.round(y / ITEM_HEIGHT);
     const clamped = Math.max(0, Math.min(items.length - 1, idx));
+    // 确保对齐
+    scrollToIndex(clamped, true);
     if (clamped !== selectedIndex) {
-      lastUserIdx.current = clamped;
+      skipNextPropScroll.current = true;
       onIndexChange(clamped);
     }
+    isUserScrolling.current = false;
+  }, [items.length, selectedIndex, onIndexChange, scrollToIndex]);
+
+  const handleScrollBeginDrag = () => {
+    isUserScrolling.current = true;
+  };
+
+  const handleMomentumEnd = (e) => {
+    snapToNearest(e.nativeEvent.contentOffset.y);
+  };
+
+  // 处理慢速拖动（无惯性）的情况
+  const handleScrollEndDrag = (e) => {
+    // 在 Android 上，如果没有惯性，onMomentumScrollEnd 不会触发
+    // 用一个小延迟检查是否有 momentum
+    const y = e.nativeEvent.contentOffset.y;
+    setTimeout(() => {
+      if (isUserScrolling.current) {
+        snapToNearest(y);
+      }
+    }, 120);
   };
 
   return (
@@ -55,9 +81,12 @@ export default function WheelPicker({ items, selectedIndex, onIndexChange, label
           ref={scrollRef}
           showsVerticalScrollIndicator={false}
           snapToInterval={ITEM_HEIGHT}
-          decelerationRate="fast"
+          decelerationRate={Platform.OS === 'ios' ? 'normal' : 0.985}
+          onScrollBeginDrag={handleScrollBeginDrag}
           onMomentumScrollEnd={handleMomentumEnd}
+          onScrollEndDrag={handleScrollEndDrag}
           contentContainerStyle={{ paddingVertical: PADDING }}
+          nestedScrollEnabled={true}
         >
           {items.map((item, idx) => (
             <View key={idx} style={styles.item}>
@@ -83,7 +112,7 @@ const styles = StyleSheet.create({
   },
   container: {
     height: CONTAINER_HEIGHT,
-    width: 70,
+    width: 80,
     overflow: 'hidden',
   },
   indicator: {
@@ -104,7 +133,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   itemText: {
-    fontSize: 16,
+    fontSize: 18,
     color: THEME.textLight,
   },
   itemTextSelected: {

@@ -1,5 +1,5 @@
-import React, { useRef, useCallback, useEffect } from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView, Dimensions } from 'react-native';
+import React, { useRef, useCallback } from 'react';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Dimensions, Animated } from 'react-native';
 import DayHeader from './DayHeader';
 import TimeColumn, { TIME_COL_WIDTH, CELL_HEIGHT } from './TimeColumn';
 import CourseCell from './CourseCell';
@@ -8,11 +8,13 @@ import { THEME } from '../constants/colors';
 
 const TOTAL_HEIGHT = PERIODS.length * CELL_HEIGHT;
 const SCREEN_WIDTH = Dimensions.get('window').width;
+const SWIPE_THRESHOLD = 60;
+const SWIPE_RATIO = 1.2;
 
 /**
- * 渲染单个周的课表网格（不含时间列）
+ * 渲染单个周的课表网格
  */
-function WeekPage({ grid, occupied, onPressCourse, onPressEmpty }) {
+function WeekGrid({ grid, occupied, onPressCourse, onPressEmpty }) {
   const renderDayColumn = (day) => {
     const cells = [];
 
@@ -75,98 +77,98 @@ function WeekPage({ grid, occupied, onPressCourse, onPressEmpty }) {
 
 export default function ScheduleGrid({
   grid, occupied,
-  prevGrid, prevOccupied,
-  nextGrid, nextOccupied,
   onPressCourse, onPressEmpty,
   onSwipeLeft, onSwipeRight,
 }) {
-  const hScrollRef = useRef(null);
   const pageWidth = SCREEN_WIDTH - TIME_COL_WIDTH;
-  const isRecentering = useRef(false);
+  const translateX = useRef(new Animated.Value(0)).current;
+  const isAnimating = useRef(false);
+  const touchStart = useRef({ x: 0, y: 0, t: 0 });
 
-  // 初始滚到中间页
-  useEffect(() => {
-    isRecentering.current = true;
-    if (hScrollRef.current) {
-      hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
-    }
-    setTimeout(() => { isRecentering.current = false; }, 100);
-  }, [pageWidth]);
+  const animateSwipe = useCallback((direction) => {
+    if (isAnimating.current) return;
 
-  const handleScrollEnd = useCallback((e) => {
-    if (isRecentering.current) return;
+    // direction: -1 = 左滑(下一周), 1 = 右滑(上一周)
+    const callback = direction === -1 ? onSwipeLeft : onSwipeRight;
+    if (!callback) return;
 
-    const offsetX = e.nativeEvent.contentOffset.x;
-    const page = Math.round(offsetX / pageWidth);
+    isAnimating.current = true;
 
-    if (page === 0 || page === 2) {
-      isRecentering.current = true;
-      // 关键：先回到中间页，再更新数据，避免闪烁
-      if (hScrollRef.current) {
-        hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
+    // 第一段：当前内容滑出屏幕
+    Animated.timing(translateX, {
+      toValue: -direction * pageWidth,
+      duration: 150,
+      useNativeDriver: true,
+    }).start(() => {
+      // 此时视图完全离屏，安全切换数据
+      const ok = callback();
+      if (!ok) {
+        // 边界周，弹回原位
+        Animated.spring(translateX, {
+          toValue: 0,
+          friction: 8,
+          tension: 100,
+          useNativeDriver: true,
+        }).start(() => { isAnimating.current = false; });
+        return;
       }
-      // 延迟一帧再切换数据，确保 scrollTo 已生效
-      requestAnimationFrame(() => {
-        let ok = false;
-        if (page === 0) {
-          ok = onSwipeRight && onSwipeRight();
-        } else {
-          ok = onSwipeLeft && onSwipeLeft();
-        }
-        if (!ok) {
-          // 边界周，已经在中间页了，不需要额外操作
-        }
-        setTimeout(() => { isRecentering.current = false; }, 150);
-      });
+
+      // 立即把视图放到另一侧（瞬间，无动画）
+      translateX.setValue(direction * pageWidth);
+
+      // 第二段：新内容从另一侧滑入
+      Animated.timing(translateX, {
+        toValue: 0,
+        duration: 150,
+        useNativeDriver: true,
+      }).start(() => { isAnimating.current = false; });
+    });
+  }, [pageWidth, translateX, onSwipeLeft, onSwipeRight]);
+
+  const handleTouchStart = (e) => {
+    if (isAnimating.current) return;
+    touchStart.current = {
+      x: e.nativeEvent.pageX,
+      y: e.nativeEvent.pageY,
+      t: Date.now(),
+    };
+  };
+
+  const handleTouchEnd = (e) => {
+    if (isAnimating.current) return;
+    const dx = e.nativeEvent.pageX - touchStart.current.x;
+    const dy = e.nativeEvent.pageY - touchStart.current.y;
+    const dt = Date.now() - touchStart.current.t;
+
+    if (dt > 500) return; // 太慢不算滑动
+    if (Math.abs(dx) < SWIPE_THRESHOLD) return; // 距离不够
+    if (Math.abs(dx) < Math.abs(dy) * SWIPE_RATIO) return; // 不是水平方向
+
+    if (dx < 0) {
+      animateSwipe(-1); // 左滑 → 下一周
+    } else {
+      animateSwipe(1);  // 右滑 → 上一周
     }
-  }, [pageWidth, onSwipeLeft, onSwipeRight]);
+  };
 
   return (
     <View style={styles.outerContainer}>
       <DayHeader />
-      <ScrollView style={styles.verticalScroll}>
+      <ScrollView
+        style={styles.verticalScroll}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         <View style={styles.body}>
-          {/* 左侧时间列固定 */}
           <TimeColumn />
-          {/* 右侧三页水平滑动 */}
-          <ScrollView
-            ref={hScrollRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            scrollEventThrottle={16}
-            onMomentumScrollEnd={handleScrollEnd}
-            style={styles.hScroll}
-            contentContainerStyle={{ width: pageWidth * 3 }}
-          >
-            {/* 上一周 */}
-            <View style={{ width: pageWidth }}>
-              <WeekPage
-                grid={prevGrid}
-                occupied={prevOccupied}
-                onPressCourse={onPressCourse}
-                onPressEmpty={onPressEmpty}
-              />
-            </View>
-            {/* 当前周 */}
-            <View style={{ width: pageWidth }}>
-              <WeekPage
-                grid={grid}
-                occupied={occupied}
-                onPressCourse={onPressCourse}
-                onPressEmpty={onPressEmpty}
-              />
-            </View>
-            {/* 下一周 */}
-            <View style={{ width: pageWidth }}>
-              <WeekPage
-                grid={nextGrid}
-                occupied={nextOccupied}
-                onPressCourse={onPressCourse}
-                onPressEmpty={onPressEmpty}
-              />
-            </View>
-          </ScrollView>
+          <Animated.View style={[styles.gridContainer, { transform: [{ translateX }] }]}>
+            <WeekGrid
+              grid={grid}
+              occupied={occupied}
+              onPressCourse={onPressCourse}
+              onPressEmpty={onPressEmpty}
+            />
+          </Animated.View>
         </View>
       </ScrollView>
     </View>
@@ -185,8 +187,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     height: TOTAL_HEIGHT,
   },
-  hScroll: {
+  gridContainer: {
     flex: 1,
+    height: TOTAL_HEIGHT,
   },
   gridArea: {
     flex: 1,

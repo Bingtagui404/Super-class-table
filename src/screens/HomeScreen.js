@@ -46,8 +46,6 @@ export default function HomeScreen({ navigation }) {
 
   const week = selectedWeek || currentWeek;
   const { grid, occupied } = getGrid(week);
-  const prevWeekData = week > 1 ? getGrid(week - 1) : { grid: {}, occupied: {} };
-  const nextWeekData = week < MAX_WEEKS ? getGrid(week + 1) : { grid: {}, occupied: {} };
 
   const needSetup = !settings.termStartDate;
 
@@ -186,10 +184,6 @@ export default function HomeScreen({ navigation }) {
       <ScheduleGrid
         grid={grid}
         occupied={occupied}
-        prevGrid={prevWeekData.grid}
-        prevOccupied={prevWeekData.occupied}
-        nextGrid={nextWeekData.grid}
-        nextOccupied={nextWeekData.occupied}
         onPressCourse={handlePressCourse}
         onPressEmpty={handlePressEmpty}
         onSwipeLeft={handleSwipeLeft}
