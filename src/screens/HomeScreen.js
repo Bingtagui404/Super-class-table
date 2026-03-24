@@ -252,62 +252,64 @@ export default function HomeScreen({ navigation }) {
           onPress={() => setShowSettings(false)}
         >
           <View style={styles.settingsContent} onStartShouldSetResponder={() => true}>
-            <Text style={styles.modalTitle}>设置</Text>
-            <Text style={styles.modalInfo}>开学日期</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="例如 2025-9-1 或 2025-09-01"
-              value={dateInput}
-              onChangeText={setDateInput}
-            />
-            <DateWheelPicker
-              value={dateInput}
-              onDateChange={(d) => setDateInput(d)}
-            />
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveDate}>
-              <Text style={styles.saveBtnText}>保存</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.clearBtn}
-              onPress={() => {
-                Alert.alert('清除数据', '确定清除所有课程吗？此操作不可撤销。', [
-                  { text: '取消' },
-                  {
-                    text: '清除',
-                    style: 'destructive',
-                    onPress: async () => {
-                      const { clearAllCourses } = require('../services/storage');
-                      await clearAllCourses();
-                      reload();
-                      setShowSettings(false);
-                    },
-                  },
-                ]);
-              }}
-            >
-              <Text style={styles.clearBtnText}>清除所有课程</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.feedbackBtn}
-              onPress={() => {
-                Alert.alert(
-                  '反馈问题',
-                  '开发者：白小纯\n邮箱：527196771@qq.com',
-                  [
+            <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
+              <Text style={styles.modalTitle}>设置</Text>
+              <Text style={styles.modalInfo}>开学日期</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="例如 2025-9-1 或 2025-09-01"
+                value={dateInput}
+                onChangeText={setDateInput}
+              />
+              <DateWheelPicker
+                value={dateInput}
+                onDateChange={(d) => setDateInput(d)}
+              />
+              <TouchableOpacity style={styles.saveBtn} onPress={handleSaveDate}>
+                <Text style={styles.saveBtnText}>保存</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.clearBtn}
+                onPress={() => {
+                  Alert.alert('清除数据', '确定清除所有课程吗？此操作不可撤销。', [
+                    { text: '取消' },
                     {
-                      text: '复制邮箱',
-                      onPress: () => {
-                        Clipboard.setStringAsync('527196771@qq.com');
-                        Alert.alert('已复制', '邮箱已复制到剪贴板');
+                      text: '清除',
+                      style: 'destructive',
+                      onPress: async () => {
+                        const { clearAllCourses } = require('../services/storage');
+                        await clearAllCourses();
+                        reload();
+                        setShowSettings(false);
                       },
                     },
-                    { text: '关闭' },
-                  ]
-                );
-              }}
-            >
-              <Text style={styles.feedbackBtnText}>反馈问题</Text>
-            </TouchableOpacity>
+                  ]);
+                }}
+              >
+                <Text style={styles.clearBtnText}>清除所有课程</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.feedbackBtn}
+                onPress={() => {
+                  Alert.alert(
+                    '反馈问题',
+                    '开发者：白小纯\n邮箱：527196771@qq.com',
+                    [
+                      {
+                        text: '复制邮箱',
+                        onPress: () => {
+                          Clipboard.setStringAsync('527196771@qq.com');
+                          Alert.alert('已复制', '邮箱已复制到剪贴板');
+                        },
+                      },
+                      { text: '关闭' },
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.feedbackBtnText}>反馈问题</Text>
+              </TouchableOpacity>
+            </ScrollView>
           </View>
         </TouchableOpacity>
       </Modal>
@@ -385,6 +387,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 20,
     width: '85%',
+    maxHeight: '80%',
   },
   input: {
     borderWidth: 1,

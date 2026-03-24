@@ -82,55 +82,54 @@ export default function ScheduleGrid({
 }) {
   const hScrollRef = useRef(null);
   const pageWidth = SCREEN_WIDTH - TIME_COL_WIDTH;
-  const isRecentering = useRef(false);
+  const isAdjusting = useRef(false);
   const [masking, setMasking] = useState(false);
 
-  // 初始滚到中间页
+  // 初始滚到中间页（当前周）
   useEffect(() => {
-    isRecentering.current = true;
     if (hScrollRef.current) {
       hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
     }
-    setTimeout(() => { isRecentering.current = false; }, 100);
   }, [pageWidth]);
 
-  // grid 数据变化时（切周后），重置到中间页并移除遮罩
-  const prevGridRef = useRef(grid);
+  // 当 grid 数据变化（周切换后），重置到中间页并移除遮罩
   useEffect(() => {
-    if (prevGridRef.current !== grid) {
-      prevGridRef.current = grid;
-      // 数据已更新，立即重置到中间页
-      if (hScrollRef.current) {
-        hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
-      }
-      // 给一帧让 scrollTo 生效后移除遮罩
-      requestAnimationFrame(() => {
-        setMasking(false);
-        isRecentering.current = false;
-      });
+    if (hScrollRef.current && !isAdjusting.current) {
+      hScrollRef.current.scrollTo({ x: pageWidth, animated: false });
+    }
+    // grid 已更新且 scrollTo 已发出，下一帧移除遮罩
+    if (masking) {
+      requestAnimationFrame(() => setMasking(false));
     }
   }, [grid, pageWidth]);
 
   const handleScrollEnd = useCallback((e) => {
-    if (isRecentering.current) return;
-
     const offsetX = e.nativeEvent.contentOffset.x;
     const page = Math.round(offsetX / pageWidth);
 
-    if (page === 0 || page === 2) {
-      isRecentering.current = true;
-      // 立即显示白色遮罩，盖住即将闪烁的内容
+    if (page === 0) {
+      isAdjusting.current = true;
+      // 显示遮罩盖住即将闪烁的内容
       setMasking(true);
-
-      // 切换数据（遮罩已经盖住了，不怕闪）
-      requestAnimationFrame(() => {
-        if (page === 0) {
-          onSwipeRight && onSwipeRight();
-        } else {
-          onSwipeLeft && onSwipeLeft();
+      const ok = onSwipeRight && onSwipeRight();
+      setTimeout(() => { isAdjusting.current = false; }, 50);
+      if (!ok) {
+        setMasking(false);
+        if (hScrollRef.current) {
+          hScrollRef.current.scrollTo({ x: pageWidth, animated: true });
         }
-        // 遮罩会在 grid 变化的 useEffect 中移除
-      });
+      }
+    } else if (page === 2) {
+      isAdjusting.current = true;
+      setMasking(true);
+      const ok = onSwipeLeft && onSwipeLeft();
+      setTimeout(() => { isAdjusting.current = false; }, 50);
+      if (!ok) {
+        setMasking(false);
+        if (hScrollRef.current) {
+          hScrollRef.current.scrollTo({ x: pageWidth, animated: true });
+        }
+      }
     }
   }, [pageWidth, onSwipeLeft, onSwipeRight]);
 
@@ -180,10 +179,8 @@ export default function ScheduleGrid({
               />
             </View>
           </ScrollView>
-          {/* 白色遮罩：切周时盖住闪烁 */}
-          {masking && (
-            <View style={styles.mask} pointerEvents="none" />
-          )}
+          {/* 白色遮罩：切周瞬间盖住闪烁 */}
+          {masking && <View style={styles.mask} pointerEvents="none" />}
         </View>
       </ScrollView>
     </View>
