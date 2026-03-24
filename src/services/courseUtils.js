@@ -47,20 +47,23 @@ export function generateId() {
 }
 
 export function buildGrid(coursesForWeek) {
-  const grid = {};
+  const grid = {};      // "day-period" -> [{ ...course, span }]
+  const occupied = {};  // "day-period" -> true（被跨行课程占据的格子）
+
   coursesForWeek.forEach((course) => {
-    const startPair = Math.ceil(course.startPeriod / 2);
-    const endPair = Math.ceil(course.endPeriod / 2);
-    for (let pair = startPair; pair <= endPair; pair++) {
-      const key = `${course.dayOfWeek}-${pair}`;
-      if (!grid[key]) grid[key] = [];
-      // 避免重复添加同一课程（跨节课会出现多次）
-      if (!grid[key].find((c) => c.id === course.id)) {
-        grid[key].push(course);
-      }
+    const key = `${course.dayOfWeek}-${course.startPeriod}`;
+    if (!grid[key]) grid[key] = [];
+    const span = course.endPeriod - course.startPeriod + 1;
+    if (!grid[key].find((c) => c.id === course.id)) {
+      grid[key].push({ ...course, span });
+    }
+    // 标记被跨行占据的格子
+    for (let p = course.startPeriod + 1; p <= course.endPeriod; p++) {
+      occupied[`${course.dayOfWeek}-${p}`] = true;
     }
   });
-  return grid;
+
+  return { grid, occupied };
 }
 
 // 将周次范围格式化为可读字符串

@@ -2,12 +2,11 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { DAYS } from '../constants/config';
 import { THEME } from '../constants/colors';
-
-const TIME_COL_WIDTH = 30;
+import { TIME_COL_WIDTH } from './TimeColumn';
 
 export default function DayHeader() {
-  const today = new Date().getDay(); // 0=Sun, 1=Mon, ...
-  const todayIdx = today === 0 ? 6 : today - 1; // 0=Mon, ..., 6=Sun
+  const today = new Date().getDay();
+  const todayIdx = today === 0 ? 6 : today - 1;
 
   return (
     <View style={styles.row}>

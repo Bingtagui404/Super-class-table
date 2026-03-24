@@ -122,7 +122,10 @@ export function useCourses() {
   );
 
   const getGrid = useCallback(
-    (week) => buildGrid(filterCoursesForWeek(courses, week)),
+    (week) => {
+      const { grid, occupied } = buildGrid(filterCoursesForWeek(courses, week));
+      return { grid, occupied };
+    },
     [courses]
   );
 

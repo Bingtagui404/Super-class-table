@@ -15,6 +15,8 @@ import WeekSelector from '../components/WeekSelector';
 import { useCourses } from '../hooks/useCourses';
 import { formatWeekRanges } from '../services/courseUtils';
 import { THEME } from '../constants/colors';
+import { MAX_WEEKS } from '../constants/config';
+import DateWheelPicker from '../components/DateWheelPicker';
 
 export default function HomeScreen({ navigation }) {
   const {
@@ -41,9 +43,19 @@ export default function HomeScreen({ navigation }) {
   );
 
   const week = selectedWeek || currentWeek;
-  const grid = getGrid(week);
+  const { grid, occupied } = getGrid(week);
 
   const needSetup = !settings.termStartDate;
+
+  const handleSwipeLeft = () => {
+    const next = Math.min(MAX_WEEKS, week + 1);
+    setSelectedWeek(next);
+  };
+
+  const handleSwipeRight = () => {
+    const prev = Math.max(1, week - 1);
+    setSelectedWeek(prev);
+  };
 
   const handlePressCourse = (course) => {
     setDetailCourse(course);
@@ -75,14 +87,25 @@ export default function HomeScreen({ navigation }) {
     ]);
   };
 
+  const normalizeDateInput = (input) => {
+    const match = input.trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+    if (!match) return null;
+    const [, y, m, d] = match;
+    const month = parseInt(m);
+    const day = parseInt(d);
+    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+  };
+
   const handleSaveDate = async () => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-      Alert.alert('格式错误', '请输入 YYYY-MM-DD 格式的日期，如 2025-09-01');
+    const normalized = normalizeDateInput(dateInput);
+    if (!normalized) {
+      Alert.alert('格式错误', '请输入日期，如 2025-9-1 或 2025-09-01');
       return;
     }
     await updateSettings({
-      termStartDate: dateInput,
-      currentSemesterId: dateInput.slice(0, 4) + '-' + (parseInt(dateInput.slice(5, 7)) > 6 ? '1' : '2'),
+      termStartDate: normalized,
+      currentSemesterId: normalized.slice(0, 4) + '-' + (parseInt(normalized.slice(5, 7)) > 6 ? '1' : '2'),
     });
     setShowSettings(false);
   };
@@ -133,8 +156,11 @@ export default function HomeScreen({ navigation }) {
       {/* Schedule Grid */}
       <ScheduleGrid
         grid={grid}
+        occupied={occupied}
         onPressCourse={handlePressCourse}
         onPressEmpty={handlePressEmpty}
+        onSwipeLeft={handleSwipeLeft}
+        onSwipeRight={handleSwipeRight}
       />
 
       {/* Import FAB */}
@@ -194,13 +220,16 @@ export default function HomeScreen({ navigation }) {
         >
           <View style={styles.settingsContent} onStartShouldSetResponder={() => true}>
             <Text style={styles.modalTitle}>设置</Text>
-            <Text style={styles.modalInfo}>开学日期（YYYY-MM-DD）</Text>
+            <Text style={styles.modalInfo}>开学日期</Text>
             <TextInput
               style={styles.input}
-              placeholder="例如 2025-09-01"
+              placeholder="例如 2025-9-1 或 2025-09-01"
               value={dateInput}
               onChangeText={setDateInput}
-              keyboardType={Platform.OS === 'ios' ? 'default' : 'default'}
+            />
+            <DateWheelPicker
+              value={dateInput}
+              onDateChange={(d) => setDateInput(d)}
             />
             <TouchableOpacity style={styles.saveBtn} onPress={handleSaveDate}>
               <Text style={styles.saveBtnText}>保存</Text>

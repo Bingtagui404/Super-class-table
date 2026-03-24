@@ -2,6 +2,23 @@ export const JWXT_URL = 'http://jwxt.dlnu.edu.cn/jsxsd/';
 
 export const DAYS = ['周一', '周二', '周三', '周四', '周五', '周六', '周日'];
 
+// 金石滩校区各节次上课时间
+export const PERIODS = [
+  { period: 1, time: '08:30' },
+  { period: 2, time: '09:20' },
+  { period: 3, time: '10:20' },
+  { period: 4, time: '11:10' },
+  { period: 5, time: '12:10' },
+  { period: 6, time: '12:55' },
+  { period: 7, time: '13:30' },
+  { period: 8, time: '14:20' },
+  { period: 9, time: '15:20' },
+  { period: 10, time: '16:10' },
+  { period: 11, time: '17:10' },
+  { period: 12, time: '17:55' },
+];
+
+// 保留供 AddCourseScreen 等使用
 export const PERIOD_PAIRS = [
   { label: '1-2', start: 1, end: 2 },
   { label: '3-4', start: 3, end: 4 },
