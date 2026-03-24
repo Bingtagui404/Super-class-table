@@ -48,13 +48,15 @@ export default function HomeScreen({ navigation }) {
   const needSetup = !settings.termStartDate;
 
   const handleSwipeLeft = () => {
-    const next = Math.min(MAX_WEEKS, week + 1);
-    setSelectedWeek(next);
+    if (week >= MAX_WEEKS) return false;
+    setSelectedWeek(week + 1);
+    return true;
   };
 
   const handleSwipeRight = () => {
-    const prev = Math.max(1, week - 1);
-    setSelectedWeek(prev);
+    if (week <= 1) return false;
+    setSelectedWeek(week - 1);
+    return true;
   };
 
   const handlePressCourse = (course) => {

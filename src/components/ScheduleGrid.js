@@ -32,21 +32,21 @@ export default function ScheduleGrid({ grid, occupied, onPressCourse, onPressEmp
     if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 500) {
       swiping.current = true;
       if (dx < 0 && onSwipeLeft) {
-        Animated.sequence([
-          Animated.timing(translateX, { toValue: -100, duration: 120, useNativeDriver: true }),
-        ]).start(() => {
-          onSwipeLeft();
-          translateX.setValue(100);
-          Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
-        });
+        const ok = onSwipeLeft();
+        if (ok) {
+          Animated.timing(translateX, { toValue: -100, duration: 120, useNativeDriver: true }).start(() => {
+            translateX.setValue(100);
+            Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
+          });
+        }
       } else if (dx > 0 && onSwipeRight) {
-        Animated.sequence([
-          Animated.timing(translateX, { toValue: 100, duration: 120, useNativeDriver: true }),
-        ]).start(() => {
-          onSwipeRight();
-          translateX.setValue(-100);
-          Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
-        });
+        const ok = onSwipeRight();
+        if (ok) {
+          Animated.timing(translateX, { toValue: 100, duration: 120, useNativeDriver: true }).start(() => {
+            translateX.setValue(-100);
+            Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
+          });
+        }
       }
     }
   }, [onSwipeLeft, onSwipeRight, translateX]);
