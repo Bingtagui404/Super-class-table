@@ -99,6 +99,10 @@ src/
 
 解析流程：自动将周次选择器切到"全部" → 等待页面刷新 → 遍历 `table.qz-weeklyTable` 提取课程数据。
 
+## 已知问题
+
+- **切换账号功能暂不可用** — 教务系统的登录 session 由服务端控制，WebView 刷新后仍保持上一个账号的登录状态，目前无法在 App 内切换到其他账号。临时解决方案：卸载重装 App。
+
 ## 反馈
 
 - **GitHub Issues**: [提交 Issue](https://github.com/Bingtagui404/Super-class-table/issues)
