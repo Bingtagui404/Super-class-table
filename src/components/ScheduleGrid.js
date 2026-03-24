@@ -1,5 +1,5 @@
-import React, { useRef } from 'react';
-import { View, TouchableOpacity, StyleSheet, ScrollView, Animated, PanResponder } from 'react-native';
+import React, { useRef, useCallback } from 'react';
+import { View, TouchableOpacity, StyleSheet, ScrollView, Animated } from 'react-native';
 import DayHeader from './DayHeader';
 import TimeColumn, { TIME_COL_WIDTH, CELL_HEIGHT } from './TimeColumn';
 import CourseCell from './CourseCell';
@@ -7,37 +7,49 @@ import { PERIODS } from '../constants/config';
 import { THEME } from '../constants/colors';
 
 const TOTAL_HEIGHT = PERIODS.length * CELL_HEIGHT;
-const SWIPE_THRESHOLD = 50;
+const SWIPE_THRESHOLD = 80;
 
 export default function ScheduleGrid({ grid, occupied, onPressCourse, onPressEmpty, onSwipeLeft, onSwipeRight }) {
   const translateX = useRef(new Animated.Value(0)).current;
+  const touchStart = useRef({ x: 0, y: 0, time: 0 });
+  const swiping = useRef(false);
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gs) =>
-        Math.abs(gs.dx) > Math.abs(gs.dy) && Math.abs(gs.dx) > 10,
-      onPanResponderMove: (_, gs) => {
-        translateX.setValue(gs.dx * 0.3);
-      },
-      onPanResponderRelease: (_, gs) => {
-        if (gs.dx < -SWIPE_THRESHOLD && onSwipeLeft) {
-          Animated.timing(translateX, { toValue: -80, duration: 150, useNativeDriver: true }).start(() => {
-            onSwipeLeft();
-            translateX.setValue(80);
-            Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
-          });
-        } else if (gs.dx > SWIPE_THRESHOLD && onSwipeRight) {
-          Animated.timing(translateX, { toValue: 80, duration: 150, useNativeDriver: true }).start(() => {
-            onSwipeRight();
-            translateX.setValue(-80);
-            Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
-          });
-        } else {
-          Animated.spring(translateX, { toValue: 0, useNativeDriver: true }).start();
-        }
-      },
-    })
-  ).current;
+  const handleTouchStart = useCallback((e) => {
+    touchStart.current = {
+      x: e.nativeEvent.pageX,
+      y: e.nativeEvent.pageY,
+      time: Date.now(),
+    };
+    swiping.current = false;
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    const dx = e.nativeEvent.pageX - touchStart.current.x;
+    const dy = e.nativeEvent.pageY - touchStart.current.y;
+    const dt = Date.now() - touchStart.current.time;
+
+    // 只处理水平滑动：水平距离 > 阈值，水平 > 垂直，时间 < 500ms
+    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 500) {
+      swiping.current = true;
+      if (dx < 0 && onSwipeLeft) {
+        Animated.sequence([
+          Animated.timing(translateX, { toValue: -100, duration: 120, useNativeDriver: true }),
+        ]).start(() => {
+          onSwipeLeft();
+          translateX.setValue(100);
+          Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
+        });
+      } else if (dx > 0 && onSwipeRight) {
+        Animated.sequence([
+          Animated.timing(translateX, { toValue: 100, duration: 120, useNativeDriver: true }),
+        ]).start(() => {
+          onSwipeRight();
+          translateX.setValue(-100);
+          Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
+        });
+      }
+    }
+  }, [onSwipeLeft, onSwipeRight, translateX]);
 
   const renderDayColumn = (day) => {
     const cells = [];
@@ -52,18 +64,22 @@ export default function ScheduleGrid({ grid, occupied, onPressCourse, onPressEmp
       );
     }
 
-    // 空白可点击区域（只渲染未被占据且无课的格子）
+    // 空白可点击区域
     for (let p = 1; p <= PERIODS.length; p++) {
       const key = `${day}-${p}`;
       if (occupied && occupied[key]) continue;
       if (grid && grid[key] && grid[key].length > 0) continue;
       cells.push(
-        <TouchableOpacity
+        <View
           key={`empty-${p}`}
           style={[styles.emptyCell, { top: (p - 1) * CELL_HEIGHT, height: CELL_HEIGHT }]}
-          activeOpacity={0.3}
-          onPress={() => onPressEmpty(day, p, p)}
-        />
+        >
+          <TouchableOpacity
+            style={styles.emptyCellTouch}
+            activeOpacity={1}
+            onPress={() => onPressEmpty(day, p, p)}
+          />
+        </View>
       );
     }
 
@@ -92,16 +108,18 @@ export default function ScheduleGrid({ grid, occupied, onPressCourse, onPressEmp
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <DayHeader />
-      <View {...panResponder.panHandlers}>
-        <Animated.View style={[styles.body, { transform: [{ translateX }] }]}>
-          <TimeColumn />
-          <View style={styles.gridArea}>
-            {[1, 2, 3, 4, 5, 6, 7].map(renderDayColumn)}
-          </View>
-        </Animated.View>
-      </View>
+      <Animated.View style={[styles.body, { transform: [{ translateX }] }]}>
+        <TimeColumn />
+        <View style={styles.gridArea}>
+          {[1, 2, 3, 4, 5, 6, 7].map(renderDayColumn)}
+        </View>
+      </Animated.View>
     </ScrollView>
   );
 }
@@ -137,6 +155,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 0,
     right: 0,
+    zIndex: 0,
+  },
+  emptyCellTouch: {
+    flex: 1,
   },
   courseWrap: {
     position: 'absolute',
