@@ -22,8 +22,9 @@ const styles = StyleSheet.create({
   container: {
     margin: 1,
     borderRadius: 6,
-    padding: 4,
-    justifyContent: 'center',
+    paddingHorizontal: 4,
+    paddingVertical: 6,
+    justifyContent: 'flex-start',
     overflow: 'hidden',
   },
   name: {
