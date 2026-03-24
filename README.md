@@ -101,10 +101,7 @@ src/
 
 ## 反馈
 
-如果遇到问题或有建议：
-
 - **GitHub Issues**: [提交 Issue](https://github.com/Bingtagui404/Super-class-table/issues)
-- **邮箱**: 527196771@qq.com
 - **开发者**: 白小纯（大连民族大学）
 
 ## 致谢
