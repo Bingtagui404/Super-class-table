@@ -19,6 +19,17 @@ export const PERIODS = [
 ];
 
 // 保留供 AddCourseScreen 等使用
+// 大节时间（金石滩校区）
+export const PERIOD_PAIR_TIMES = [
+  { pair: 1, periods: [1, 2],   start: '08:30', end: '10:00' },
+  { pair: 2, periods: [3, 4],   start: '10:20', end: '11:50' },
+  { pair: 3, periods: [5, 6],   start: '12:10', end: '12:55' },
+  { pair: 4, periods: [7, 8],   start: '13:30', end: '15:00' },
+  { pair: 5, periods: [9, 10],  start: '15:20', end: '16:50' },
+  { pair: 6, periods: [11, 12], start: '17:10', end: '17:55' },
+];
+
+// 保留供 AddCourseScreen 等使用
 export const PERIOD_PAIRS = [
   { label: '1-2', start: 1, end: 2 },
   { label: '3-4', start: 3, end: 4 },

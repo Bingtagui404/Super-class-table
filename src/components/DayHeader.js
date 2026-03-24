@@ -3,6 +3,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { DAYS } from '../constants/config';
 import { THEME } from '../constants/colors';
 import { TIME_COL_WIDTH } from './TimeColumn';
+// DayHeader 需要与 TimeColumn 宽度对齐
 
 export default function DayHeader() {
   const today = new Date().getDay();

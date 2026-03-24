@@ -8,46 +8,74 @@ import { THEME } from '../constants/colors';
 
 const TOTAL_HEIGHT = PERIODS.length * CELL_HEIGHT;
 const SWIPE_THRESHOLD = 80;
+const DAMPING = 0.4;
 
 export default function ScheduleGrid({ grid, occupied, onPressCourse, onPressEmpty, onSwipeLeft, onSwipeRight }) {
   const translateX = useRef(new Animated.Value(0)).current;
   const touchStart = useRef({ x: 0, y: 0, time: 0 });
-  const swiping = useRef(false);
+  const isHorizontal = useRef(null); // null=未确定, true=水平, false=垂直
 
   const handleTouchStart = useCallback((e) => {
+    translateX.stopAnimation();
+    translateX.setValue(0);
     touchStart.current = {
       x: e.nativeEvent.pageX,
       y: e.nativeEvent.pageY,
       time: Date.now(),
     };
-    swiping.current = false;
-  }, []);
+    isHorizontal.current = null;
+  }, [translateX]);
 
-  const handleTouchEnd = useCallback((e) => {
+  const handleTouchMove = useCallback((e) => {
     const dx = e.nativeEvent.pageX - touchStart.current.x;
     const dy = e.nativeEvent.pageY - touchStart.current.y;
-    const dt = Date.now() - touchStart.current.time;
 
-    // 只处理水平滑动：水平距离 > 阈值，水平 > 垂直，时间 < 500ms
-    if (Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * 1.5 && dt < 500) {
-      swiping.current = true;
+    // 首次移动超过10px时确定方向
+    if (isHorizontal.current === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) {
+      isHorizontal.current = Math.abs(dx) > Math.abs(dy);
+    }
+
+    // 确认为水平方向才跟手
+    if (isHorizontal.current === true) {
+      translateX.setValue(dx * DAMPING);
+    }
+  }, [translateX]);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (isHorizontal.current !== true) return;
+
+    const dx = e.nativeEvent.pageX - touchStart.current.x;
+    const absDx = Math.abs(dx);
+
+    if (absDx > SWIPE_THRESHOLD) {
       if (dx < 0 && onSwipeLeft) {
         const ok = onSwipeLeft();
         if (ok) {
-          Animated.timing(translateX, { toValue: -100, duration: 120, useNativeDriver: true }).start(() => {
-            translateX.setValue(100);
-            Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
+          // 滑出 → 切数据 → 从反方向弹入
+          Animated.timing(translateX, { toValue: -120, duration: 100, useNativeDriver: true }).start(() => {
+            translateX.setValue(120);
+            Animated.spring(translateX, { toValue: 0, friction: 8, tension: 80, useNativeDriver: true }).start();
           });
+        } else {
+          // 边界弹回
+          Animated.spring(translateX, { toValue: 0, friction: 6, tension: 100, useNativeDriver: true }).start();
         }
       } else if (dx > 0 && onSwipeRight) {
         const ok = onSwipeRight();
         if (ok) {
-          Animated.timing(translateX, { toValue: 100, duration: 120, useNativeDriver: true }).start(() => {
-            translateX.setValue(-100);
-            Animated.timing(translateX, { toValue: 0, duration: 150, useNativeDriver: true }).start();
+          Animated.timing(translateX, { toValue: 120, duration: 100, useNativeDriver: true }).start(() => {
+            translateX.setValue(-120);
+            Animated.spring(translateX, { toValue: 0, friction: 8, tension: 80, useNativeDriver: true }).start();
           });
+        } else {
+          Animated.spring(translateX, { toValue: 0, friction: 6, tension: 100, useNativeDriver: true }).start();
         }
+      } else {
+        Animated.spring(translateX, { toValue: 0, friction: 6, tension: 100, useNativeDriver: true }).start();
       }
+    } else {
+      // 未达阈值，弹回
+      Animated.spring(translateX, { toValue: 0, friction: 6, tension: 100, useNativeDriver: true }).start();
     }
   }, [onSwipeLeft, onSwipeRight, translateX]);
 
@@ -108,26 +136,33 @@ export default function ScheduleGrid({ grid, occupied, onPressCourse, onPressEmp
   };
 
   return (
-    <ScrollView
-      style={styles.container}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+    <View style={styles.outerContainer}>
+      {/* DayHeader 固定在顶部不随纵向滚动 */}
       <DayHeader />
-      <Animated.View style={[styles.body, { transform: [{ translateX }] }]}>
-        <TimeColumn />
-        <View style={styles.gridArea}>
-          {[1, 2, 3, 4, 5, 6, 7].map(renderDayColumn)}
-        </View>
-      </Animated.View>
-    </ScrollView>
+      <ScrollView
+        style={styles.scrollView}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        <Animated.View style={[styles.body, { transform: [{ translateX }] }]}>
+          <TimeColumn />
+          <View style={styles.gridArea}>
+            {[1, 2, 3, 4, 5, 6, 7].map(renderDayColumn)}
+          </View>
+        </Animated.View>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  outerContainer: {
     flex: 1,
     backgroundColor: THEME.white,
+  },
+  scrollView: {
+    flex: 1,
   },
   body: {
     flexDirection: 'row',
