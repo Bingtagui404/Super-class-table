@@ -14,8 +14,8 @@ export const PERIODS = [
   { period: 8, time: '14:20' },
   { period: 9, time: '15:20' },
   { period: 10, time: '16:10' },
-  { period: 11, time: '17:10' },
-  { period: 12, time: '17:55' },
+  { period: 11, time: '18:30' },
+  { period: 12, time: '19:15' },
 ];
 
 // 保留供 AddCourseScreen 等使用
@@ -26,7 +26,7 @@ export const PERIOD_PAIR_TIMES = [
   { pair: 3, periods: [5, 6],   start: '12:10', end: '12:55' },
   { pair: 4, periods: [7, 8],   start: '13:30', end: '15:00' },
   { pair: 5, periods: [9, 10],  start: '15:20', end: '16:50' },
-  { pair: 6, periods: [11, 12], start: '17:10', end: '17:55' },
+  { pair: 6, periods: [11, 12], start: '18:30', end: '20:00' },
 ];
 
 // 保留供 AddCourseScreen 等使用
