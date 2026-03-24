@@ -121,9 +121,13 @@ export default function HomeScreen({ navigation }) {
     const match = input.trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
     if (!match) return null;
     const [, y, m, d] = match;
+    const year = parseInt(y);
     const month = parseInt(m);
+    if (year < 2020 || year > 2040) return null;
+    if (month < 1 || month > 12) return null;
+    const maxDay = new Date(year, month, 0).getDate();
     const day = parseInt(d);
-    if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+    if (day < 1 || day > maxDay) return null;
     return `${y}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
   };
 

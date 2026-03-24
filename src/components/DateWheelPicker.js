@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import WheelPicker from './WheelPicker';
 
-const YEARS = Array.from({ length: 16 }, (_, i) => 2020 + i); // 2020-2035
+const YEARS = Array.from({ length: 21 }, (_, i) => 2020 + i); // 2020-2040
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
 
 function getDaysInMonth(year, month) {
@@ -12,30 +12,44 @@ function getDaysInMonth(year, month) {
 export default function DateWheelPicker({ value, onDateChange }) {
   // 兼容 YYYY-MM-DD 和 YYYY/M/D 等格式
   const parseDate = useCallback((dateStr) => {
-    if (!dateStr) return { year: 2025, month: 9, day: 1 };
+    if (!dateStr) return null;
     const match = dateStr.trim().match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
-    if (!match) return { year: 2025, month: 9, day: 1 };
+    if (!match) return null;
     const y = parseInt(match[1]);
     const m = parseInt(match[2]);
     const d = parseInt(match[3]);
-    // 如果年份超出滚轮范围，clamp 到范围内
-    const clampedYear = Math.max(YEARS[0], Math.min(YEARS[YEARS.length - 1], y));
-    const clampedMonth = Math.max(1, Math.min(12, m));
-    const maxD = getDaysInMonth(clampedYear, clampedMonth);
-    const clampedDay = Math.max(1, Math.min(maxD, d));
-    return { year: clampedYear, month: clampedMonth, day: clampedDay };
+    // 年份不在滚轮范围内则视为无效
+    if (y < YEARS[0] || y > YEARS[YEARS.length - 1]) return null;
+    if (m < 1 || m > 12) return null;
+    const maxD = getDaysInMonth(y, m);
+    if (d < 1 || d > maxD) return null;
+    return { year: y, month: m, day: d };
   }, []);
 
   const parsed = parseDate(value);
-  const [year, setYear] = useState(parsed.year);
-  const [month, setMonth] = useState(parsed.month);
-  const [day, setDay] = useState(parsed.day);
+  const now = new Date();
+  const defaultDate = { year: now.getFullYear(), month: now.getMonth() + 1, day: now.getDate() };
+  const initial = parsed || defaultDate;
+  const [year, setYear] = useState(initial.year);
+  const [month, setMonth] = useState(initial.month);
+  const [day, setDay] = useState(initial.day);
+  const [hasValue, setHasValue] = useState(!!parsed);
 
   useEffect(() => {
     const p = parseDate(value);
-    setYear(p.year);
-    setMonth(p.month);
-    setDay(p.day);
+    if (p) {
+      setYear(p.year);
+      setMonth(p.month);
+      setDay(p.day);
+      setHasValue(true);
+    } else {
+      // 重置到当天，但标记为无值
+      const n = new Date();
+      setYear(n.getFullYear());
+      setMonth(n.getMonth() + 1);
+      setDay(n.getDate());
+      setHasValue(false);
+    }
   }, [value, parseDate]);
 
   const maxDay = getDaysInMonth(year, month);
@@ -72,33 +86,49 @@ export default function DateWheelPicker({ value, onDateChange }) {
 
   return (
     <View style={styles.container}>
-      <WheelPicker
-        items={YEARS.map(String)}
-        selectedIndex={yearIdx >= 0 ? yearIdx : 5}
-        onIndexChange={handleYearChange}
-        label="年"
-      />
-      <WheelPicker
-        items={MONTHS.map(String)}
-        selectedIndex={monthIdx >= 0 ? monthIdx : 0}
-        onIndexChange={handleMonthChange}
-        label="月"
-      />
-      <WheelPicker
-        items={days.map(String)}
-        selectedIndex={dayIdx >= 0 ? dayIdx : 0}
-        onIndexChange={handleDayChange}
-        label="日"
-      />
+      {!hasValue && (
+        <Text style={styles.hint}>滑动选择开学日期</Text>
+      )}
+      <View style={[styles.wheelRow, !hasValue && styles.dimmed]}>
+        <WheelPicker
+          items={YEARS.map(String)}
+          selectedIndex={yearIdx >= 0 ? yearIdx : 5}
+          onIndexChange={handleYearChange}
+          label="年"
+        />
+        <WheelPicker
+          items={MONTHS.map(String)}
+          selectedIndex={monthIdx >= 0 ? monthIdx : 0}
+          onIndexChange={handleMonthChange}
+          label="月"
+        />
+        <WheelPicker
+          items={days.map(String)}
+          selectedIndex={dayIdx >= 0 ? dayIdx : 0}
+          onIndexChange={handleDayChange}
+          label="日"
+        />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    alignItems: 'center',
+    marginVertical: 12,
+  },
+  wheelRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
-    marginVertical: 12,
+  },
+  dimmed: {
+    opacity: 0.4,
+  },
+  hint: {
+    fontSize: 13,
+    color: '#999',
+    marginBottom: 6,
   },
 });

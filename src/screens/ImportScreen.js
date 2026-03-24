@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
+import CookieManager from '@react-native-cookies/cookies';
 import { PARSE_SCHEDULE_JS } from '../services/parser';
 import { useCourses } from '../hooks/useCourses';
 import { JWXT_URL } from '../constants/config';
@@ -19,7 +20,16 @@ export default function ImportScreen({ navigation }) {
       { text: '取消', style: 'cancel' },
       {
         text: '确定',
-        onPress: () => {
+        onPress: async () => {
+          if (retryTimer.current) { clearTimeout(retryTimer.current); retryTimer.current = null; }
+          try {
+            await CookieManager.clearAll(true);
+            if (Platform.OS === 'android') {
+              await CookieManager.flush();
+            }
+          } catch (e) {
+            // ignore if cookie clear fails
+          }
           setWebViewKey(k => k + 1);
           setStatus('');
           setImporting(false);
