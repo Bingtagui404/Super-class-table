@@ -9,6 +9,7 @@ import {
   Alert,
   TextInput,
   Platform,
+  ScrollView,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useFocusEffect } from '@react-navigation/native';
@@ -246,13 +247,13 @@ export default function HomeScreen({ navigation }) {
 
       {/* Settings Modal */}
       <Modal visible={showSettings} transparent animationType="slide">
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowSettings(false)}
-        >
-          <View style={styles.settingsContent} onStartShouldSetResponder={() => true}>
-            <ScrollView showsVerticalScrollIndicator={false} nestedScrollEnabled={true}>
+        <View style={styles.modalOverlay}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={() => setShowSettings(false)}
+          />
+          <View style={styles.settingsContent}>
             <Text style={styles.modalTitle}>设置</Text>
             <Text style={styles.modalInfo}>开学日期</Text>
             <TextInput
@@ -268,50 +269,58 @@ export default function HomeScreen({ navigation }) {
             <TouchableOpacity style={styles.saveBtn} onPress={handleSaveDate}>
               <Text style={styles.saveBtnText}>保存</Text>
             </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.clearBtn}
-              onPress={() => {
-                Alert.alert('清除数据', '确定清除所有课程吗？此操作不可撤销。', [
-                  { text: '取消' },
-                  {
-                    text: '清除',
-                    style: 'destructive',
-                    onPress: async () => {
-                      const { clearAllCourses } = require('../services/storage');
-                      await clearAllCourses();
-                      reload();
-                      setShowSettings(false);
-                    },
-                  },
-                ]);
-              }}
-            >
-              <Text style={styles.clearBtnText}>清除所有课程</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.feedbackBtn}
-              onPress={() => {
-                Alert.alert(
-                  '反馈问题',
-                  '开发者：白小纯\n邮箱：527196771@qq.com',
-                  [
+            <View style={styles.bottomBtns}>
+              <TouchableOpacity
+                style={styles.clearBtn}
+                onPress={() => {
+                  Alert.alert('清除数据', '确定清除所有课程吗？此操作不可撤销。', [
+                    { text: '取消' },
                     {
-                      text: '复制邮箱',
-                      onPress: () => {
-                        Clipboard.setStringAsync('527196771@qq.com');
-                        Alert.alert('已复制', '邮箱已复制到剪贴板');
+                      text: '清除',
+                      style: 'destructive',
+                      onPress: async () => {
+                        const { clearAllCourses } = require('../services/storage');
+                        await clearAllCourses();
+                        reload();
+                        setShowSettings(false);
                       },
                     },
-                    { text: '关闭' },
-                  ]
-                );
-              }}
-            >
-              <Text style={styles.feedbackBtnText}>反馈问题</Text>
-            </TouchableOpacity>
-            </ScrollView>
+                  ]);
+                }}
+              >
+                <Text style={styles.clearBtnText}>清除所有课程</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.feedbackBtn}
+                onPress={() => {
+                  Alert.alert(
+                    '反馈问题',
+                    '开发者：白小纯\n邮箱：527196771@qq.com\nGitHub：Bingtagui404',
+                    [
+                      {
+                        text: '复制邮箱',
+                        onPress: () => {
+                          Clipboard.setStringAsync('527196771@qq.com');
+                          Alert.alert('已复制', '邮箱已复制到剪贴板');
+                        },
+                      },
+                      {
+                        text: '复制GitHub',
+                        onPress: () => {
+                          Clipboard.setStringAsync('https://github.com/Bingtagui404');
+                          Alert.alert('已复制', 'GitHub地址已复制到剪贴板');
+                        },
+                      },
+                      { text: '关闭' },
+                    ]
+                  );
+                }}
+              >
+                <Text style={styles.feedbackBtnText}>反馈问题</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </View>
   );
@@ -406,7 +415,7 @@ const styles = StyleSheet.create({
   },
   saveBtnText: { color: THEME.white, fontSize: 16, fontWeight: 'bold' },
   clearBtn: {
-    marginTop: 16,
+    flex: 1,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',
@@ -414,8 +423,13 @@ const styles = StyleSheet.create({
     borderColor: THEME.danger,
   },
   clearBtnText: { color: THEME.danger, fontSize: 14 },
+  bottomBtns: {
+    flexDirection: 'row',
+    marginTop: 16,
+    gap: 10,
+  },
   feedbackBtn: {
-    marginTop: 12,
+    flex: 1,
     padding: 12,
     borderRadius: 8,
     alignItems: 'center',

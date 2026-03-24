@@ -56,6 +56,7 @@ export default function WheelPicker({ items, selectedIndex, onIndexChange, label
           showsVerticalScrollIndicator={false}
           snapToInterval={ITEM_HEIGHT}
           decelerationRate="fast"
+          nestedScrollEnabled={true}
           onMomentumScrollEnd={handleMomentumEnd}
           contentContainerStyle={{ paddingVertical: PADDING }}
         >
